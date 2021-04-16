@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs/formatters"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/muxes"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
+	"px.dev/pxapi"
+	"px.dev/pxapi/errdefs"
+	"px.dev/pxapi/errdefs/formatters"
+	"px.dev/pxapi/muxes"
+	"px.dev/pxapi/types"
 )
 
 var (

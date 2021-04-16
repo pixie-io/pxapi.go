@@ -3,9 +3,9 @@ package pxapi
 import (
 	"context"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"px.dev/pxapi/errdefs"
+	cloudapipb "px.dev/pxapi/pxpb/cloudapipb"
+	vizierapipb "px.dev/pxapi/pxpb/vizierapipb"
 )
 
 // VizierStatus stores the enumeration of all vizier statuses.

@@ -3,7 +3,7 @@ package errdefs
 import (
 	"fmt"
 
-	publicvizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	publicvizierapipb "px.dev/pxapi/pxpb/vizierapipb"
 )
 
 // CompilerMultiError is an implementation of a multi-error for compiler messages.

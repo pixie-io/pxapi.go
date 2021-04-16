@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
+	"px.dev/pxapi/errdefs"
+	"px.dev/pxapi/types"
 )
 
 const tableNameKey = "_tableName_"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	pb "px.dev/pxapi/pxpb/uuidpb"
 )
 
 var enc = binary.BigEndian

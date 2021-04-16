@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	vizierpb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"px.dev/pxapi/errdefs"
+	"px.dev/pxapi/types"
+	vizierapipb "px.dev/pxapi/pxpb/vizierapipb"
+	vizierpb "px.dev/pxapi/pxpb/vizierapipb"
 )
 
 func makeErrorResponse(message string) *vizierpb.ExecuteScriptResponse {

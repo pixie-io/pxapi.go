@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"px.dev/pxapi/types"
+	cloudapipb "px.dev/pxapi/pxpb/cloudapipb"
+	vizierapipb "px.dev/pxapi/pxpb/vizierapipb"
 )
 
 const (
