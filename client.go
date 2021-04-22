@@ -30,8 +30,8 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pxapi/types"
-	cloudapipb "px.dev/pxapi/pxpb/cloudapipb"
-	vizierapipb "px.dev/pxapi/pxpb/vizierapipb"
+	cloudapipb "px.dev/pxapi/proto/cloudapipb"
+	vizierapipb "px.dev/pxapi/proto/vizierapipb"
 )
 
 const (

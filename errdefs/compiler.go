@@ -21,7 +21,7 @@ package errdefs
 import (
 	"fmt"
 
-	publicvizierapipb "px.dev/pxapi/pxpb/vizierapipb"
+	publicvizierapipb "px.dev/pxapi/proto/vizierapipb"
 )
 
 // CompilerMultiError is an implementation of a multi-error for compiler messages.

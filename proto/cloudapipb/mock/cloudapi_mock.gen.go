@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	publiccloudapipb "px.dev/pxapi/pxpb/cloudapipb"
+	publiccloudapipb "px.dev/pxapi/proto/cloudapipb"
 )
 
 // MockClusterManagerClient is a mock of ClusterManagerClient interface.

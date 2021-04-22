@@ -28,8 +28,8 @@ import (
 
 	"px.dev/pxapi/errdefs"
 	"px.dev/pxapi/types"
-	vizierapipb "px.dev/pxapi/pxpb/vizierapipb"
-	vizierpb "px.dev/pxapi/pxpb/vizierapipb"
+	vizierapipb "px.dev/pxapi/proto/vizierapipb"
+	vizierpb "px.dev/pxapi/proto/vizierapipb"
 )
 
 func makeErrorResponse(message string) *vizierpb.ExecuteScriptResponse {
