@@ -1,0 +1,409 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.vispb;
+
+option go_package = "vispb";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/wrappers.proto";
+
+// PXType represents the data type of an argument that a pxl script can take.
+// For example, with a func like def my_func(arg1: px.Service, arg2: int),
+// the PXType of arg1 would be PX_SERVICE and the PXType of arg2 would be PX_INT64.
+enum PXType {
+  PX_UNKNOWN = 0;
+  // 0-999 are reserved for "non-semantic" types.
+  PX_BOOLEAN = 1;
+  PX_INT64 = 2;
+  PX_FLOAT64 = 3;
+  PX_STRING = 4;
+  // 1000+ are reserved for semantic types.
+  // Note: PX_POD and PX_SERVICE are both expressed with the namespace prepended.
+  // For example, a pod called orders-123 in namespace pl should be written like "pl/orders-123".
+  PX_SERVICE = 1000;
+  PX_POD = 1001;
+  PX_CONTAINER = 1002;
+  PX_NAMESPACE = 1003;
+  PX_NODE = 1004;
+  // 2000+ are reserved for container types.
+  // List types.
+  PX_LIST = 2000;
+  // Specifically a string list type. Differentiated from other list types to make the UI
+  // rendering simple.
+  PX_STRING_LIST = 2001;
+}
+
+// Vis is the protobuf form of vis.json which describes the configuration of a Live View.
+// It is used to define both the functions to execute from pxl as well as the way to render
+// the charts and other widgets on the screen.
+message Vis {
+  // A Variable is a placeholder that allows the Vis message to be parametrized.
+  // FuncArgs (below) can be bound to one of these named variables. Then, when the Vis is executed,
+  // a mapping of the variable names to their values will be passed alongside the Vis message.
+  // Those mappings do not exist here so that the same Vis message can be run multiple times with
+  // different values for those variables. Multiple FuncArgs can be bound to the same Variable.
+  message Variable {
+    // name is the name of the variable, which is the identifier that a FuncArg in a Widget can be bound to.
+    string name = 1;
+    // type is the type of the value that the variable belongs to. It can be a semantic type like PX_SERVICE,
+    // which maps to the pxl type px.Service, or it can be a basic type like INT64.
+    PXType type = 2;
+    // Whether this arg's value is provided by the user, is provided by a default value, or is truly optional.
+    // If default_value is omitted, then the user must always provide a value for this arg and it is required.
+    // If default_value is the empty string, then this arg is optional. The user may omit it, and it'll be "".
+    // If default_value is set and is not the empty string, this arg is required BUT the user need not set it.
+    // default_value gets serialized to a string, but pxl scripts will still parse it based on the type field.
+    // Example: for type=PX_STRING, default_value may be "foo"; for type=PX_INT64, default_value may be "123".
+    google.protobuf.StringValue default_value = 3;
+    // description provides a description of the variable to help the user fill it in.
+    string description = 4;
+    // valid_values are an optional restricted set of values that can be set for
+    // an argument. Defining >= 1 value in this field means the user of the
+    // VisJSON can only pass one of these values into the variable. ie you might
+    // want valid_values for something like an argument that takes Kubernetes
+    // entity types (pod, service, namespace, etc.). If unspecified, the set of
+    // valid of values will be determined by the semantic type.
+    repeated string valid_values = 5;
+  }
+  // variables defines the set of input variables that Widgets in this Live View can bind to.
+  repeated Variable variables = 1;
+  // widgets defines the set of Widgets that will be displayed by the Live View in the shared grid.
+  // These can be charts, tables, or other visualizations that display the output of a pxl function.
+  repeated Widget widgets = 2;
+  // Global functions are function calls that can be referenced by widgets as an
+  // alternative to writing a function in-line. Using global functions instead
+  // of a locally defined function means you can safely re-use and update a
+  // definition of a function without much issue and also has a slight
+  // performance benefit because you reduce the necessary data transfer.
+  message GlobalFunc {
+    // The name to assign the result of the function call.
+    string output_name = 1;
+    // The function to call and store in output_name.
+    Widget.Func func = 2;
+  }
+  // The list of global functions available to the widgets.
+  repeated GlobalFunc global_funcs = 3;
+}
+
+// Widget A Widget is a visual element in a Live View. It can be a chart, a map, a table,
+// other and other component like that. The data produced by a Widget comes from a single pxl
+// function invocation, which is specified (with arguments) in the Widget message.
+// That function invocation produces one or more output DataFrames which can be consumed by
+// the display portion of the widget.
+message Widget {
+  // name is an optional field for Widget. If it isn't specified, names for the outputs
+  // associated with its calling func will be generated by either the UI or the CLI.
+  // name must be unique across all Widgets in a given Vis.
+  string name = 1;
+  // Position The location in the Live View grid that this Widget resides in, as well as its size.
+  // While this is persisted, it is subject to change by the UI when loaded into the UI if the values collide.
+  message Position {
+    // x is the x position in grid coordinates of the Widget.
+    int32 x = 1;
+    // x is the y position in grid coordinates of the Widget.
+    int32 y = 2;
+    // width of the Widget
+    int32 w = 3;
+    // height of the Widget
+    int32 h = 4;
+  }
+  Position position = 2;
+  // Func the pxl function to invoke in order to produce the desired output table(s) for the Widget.
+  // May include a script name or not. (my_func vs my_script.my_func).
+  message Func {
+    // name represents the name of the function to be invoked by this Vis.
+    // It may include a path to a global or imported pxl script, or it may just be the name of the function
+    // when a single pxl script is used in a Vis.
+    string name = 1;
+    // FuncArg the args passed to the func when it is invoked. Func args are passed by keyword, and their
+    // type is inferred from the keyword argument type annotation in the pxl func.
+    message FuncArg {
+      // name is the name of the argument, which will be passed by keyword to the invoked pxl script function.
+      string name = 1;
+      oneof input {
+        // Arg values are always represented as strings in the serialized form of the Vis, and then
+        // undergo type-specific interpretation in the compiler.
+        string value = 2;
+        // A variable name from the 'variables' field of the Vis message.
+        string variable = 3;
+      }
+    }
+    // args is the keyword args and their values with which to call the func specified in 'name' (above).
+    repeated FuncArg args = 2;
+  }
+  oneof func_or_ref {
+    Func func = 3;
+    string global_func_output_name = 5;
+  }
+  // This field represents the display of the Widget.
+  // See BarChart and TimeseriesChart below for example displays.
+  google.protobuf.Any display_spec = 4;
+}
+
+// Display protos
+// General note: For both VegaChart and other kinds of charts, here is the protocol
+// for how to reference output column names, taking the column name 'service' as an example:
+// 1) For cases where the Widget func produces a single output table, as well as cases where
+//    the Widget func produces multiple output tables but only one of those tables contains a
+//    column called "service": just use the string "service".
+// 2) For cases where the Widget func produces multiple tables, multiple of which have a column
+//    called "service": use "outputs[0].service" for table 1, "outputs[1].service" for table 2,
+//    and so on. the word "outputs" does not vary by widget.
+
+// Axis the representation of an axis, could be x, y, y2.
+// Note that the configuration of axes and other display properties of charts is intentionally
+// left very limited. This is to ensure a consistent visual style in output charts.
+message Axis {
+  // label refers to the title that should be placed on the axis.
+  string label = 1;
+}
+
+// BarChart The visual spec for a bar chart. Supports stacking and grouping of a single value column.
+message BarChart {
+  // Bar contains the logical specification of the Bar chart.
+  message Bar {
+    // Value denotes the value to plot, for example "request count".
+    string value = 1;
+    // Label denotes the label on the bars that are plotted by value, for example "service".
+    string label = 2;
+    // Stack columns When stack_by is set, stack by the provided column, for example "pod".
+    // (visual ex: https://vega.github.io/vega-lite/examples/stacked_bar_weather.html)
+    string stack_by = 3;
+    // Group columns When group_by is set, group by the provided column, for example "cluster".
+    // (visual ex: https://vega.github.io/vega-lite/examples/bar_grouped.html)
+    string group_by = 4;
+    // Whether the bars should be horizontal or not.
+    bool horizontal = 5;
+  }
+  Bar bar = 1;
+  // title is the title string for the chart.
+  string title = 2;
+  // x_axis defines configuration for the x axis of the chart.
+  Axis x_axis = 3;
+  // y_axis defines configuration for the y axis of the chart.
+  Axis y_axis = 4;
+}
+
+// HistogramChart The visual spec for a histogram chart. Support histograms
+// generated from prebinned data and data that needs to be binned.
+//
+// To prebin, store the binned histogram counts in "prebinCount" the field with the
+// left side of each bin stored in the "value". We also recommend you put the bin
+// step size parameter used as minstep to prevent artifacts.
+//
+// For example: to plot latency values that are prebinned with a step size of 50, you would
+// use the following specification:
+//
+// HistogramChart {
+//   Histogram {
+//     value: "latency_ms",
+//     prebinCount: "latency_count",
+//     minstep: 50
+//   }
+// }
+message HistogramChart {
+  // Histogram contains the logical specification of the Histogram chart.
+  message Histogram {
+    // Value denotes the field to plot. If prebin_field is not set, the value
+    // field will be binned according to the minstep and maxbins parameters.
+    // If prebin_field is set, `value` wil represent the bin values which
+    // will be resampled.
+    string value = 1;
+    // The maximum bins to display the data. Default is 10 bins.
+    int64 maxbins = 2;
+    // The minimum size of bins in the same units as `value`. Default is 0 units.
+    double minstep = 3;
+    // Whether the histogram should be horizontal or not.
+    bool horizontal = 4;
+    // (Optional) Field that contains prebinned counts for each element of `value`.
+    // If set, the bins will be resampled according to maxbins and minstep. We
+    // recommend setting minstep to be 2x the minstep (or step) parameter used to
+    // prebin. This guarantees that you won't undersample the bins.
+
+    // NOTE:
+    // Pre-binning is an optimization can yield in inaccurate results.
+    //
+    // For example given values [49, 39, 105, 145]
+    // A pre-bin with param 50 yields {[bin), count} tuples
+    // [{[0, 50), 2}, {[100, 150), 2}]
+    // Binned with minstep of 105 will use the left endpoint of the bin, yielding the
+    // following tuple, falsely stating that the original data had 0-values
+    // between 105 and 210:
+    // [{[0, 105), 4}, {[105, 210), 0}]
+    //
+    // You can increase your accuracy by choosing smaller pre-bin step size.
+    // although in most cases, small versions of the above error shouldn't significantly
+    // affect the usefulness of the histogram.
+    //
+    string prebin_count = 5;
+  }
+  Histogram histogram = 1;
+  // title is the title string for the chart.
+  string title = 2;
+  // x_axis defines configuration for the x axis of the chart.
+  Axis x_axis = 3;
+  // y_axis defines configuration for the y axis of the chart.
+  Axis y_axis = 4;
+}
+
+// TimeseriesChart the visual spec for a timeseries chart. There is variety in the possible visual
+// style for these charts, but they always occur over time. They automatically use the time_ column
+// of the input table(s) as the x-axis.
+message TimeseriesChart {
+  // Timeseries is the logical specification of the timeseries.
+  message Timeseries {
+    // value is the value to plot, such as 'latency'.
+    string value = 1;
+    // series, if provided, is the series to create for the timeseries, such as 'service'.
+    string series = 2;
+    // If series is set, stack_by_series causes the series to be stacked on top of each other
+    // rather than all from the offset of y=0.
+    bool stack_by_series = 3;
+    // Mode represents the visual display mode for this timeseries.
+    enum Mode {
+      // MODE_BAR has been deprecated, if you want a bar timeseries, you should use BarChart.
+      reserved 1;
+      MODE_UNKNOWN = 0;
+      MODE_LINE = 2;
+      MODE_POINT = 3;
+      MODE_AREA = 4;
+    }
+    Mode mode = 4;
+  }
+  // timeseries contains the specification for each timeseries in this chart.
+  // This field being repeated supports multiple timeseries on the same chart.
+  repeated Timeseries timeseries = 1;
+  // title is the title string for the chart.
+  string title = 2;
+  // x_axis defines configuration for the x axis of the chart.
+  Axis x_axis = 3;
+  // y_axis defines configuration for the y axis of the chart.
+  Axis y_axis = 4;
+}
+
+// VegaChart the spec for providing a vega or vega lite spec directly to the UI.
+message VegaChart {
+  // spec is the serialized JSON form of the Vega/Vega Lite spec.
+  string spec = 1;
+}
+
+// Table the spec for displaying the output as a table.
+message Table {
+  // ColumnDisplay gives the display options for a given column.
+  message ColumnDisplay {
+    oneof column {
+      // name refers to the name of an output column.
+      string name = 1;
+    }
+    // display_title provides a pretty name to give the column in the UI.
+    string display_title = 3;
+  }
+  // display_columns, when provided, gives a list of columns and their display options.
+  // When not provided, all columns of the output table are displayed noramlly.
+  repeated ColumnDisplay display_columns = 1;
+}
+
+// Graph the spec for displaying the output as a graph.
+message Graph {
+  message AdjacencyList {
+    // The column containing the source nodes in the graph.
+    string from_column = 1;
+    // The column containing the destination nodes in the graph.
+    string to_column = 2;
+  }
+  message EdgeThresholds {
+    // The value at which the edge should be considered 'MEDIUM'.
+    int64 medium_threshold = 1;
+    // The value at which the edge should be considered 'HIGH'.
+    int64 high_threshold = 2;
+  }
+  oneof input {
+    // The column which contains the dot-formatted graph file to render.
+    string dot_column = 1;
+    AdjacencyList adjacency_list = 2;
+  }
+  // The column to use to determine the stroke width of the edge. Optional.
+  string edge_weight_column = 3;
+  // The column to use to determine the size of the node. Optional.
+  string node_weight_column = 4;
+  // The column to use to determine what the color of the edge should be. Optional.
+  string edge_color_column = 5;
+  // The threshold at which edge values are classified as a 'LOW'/'MEDIUM'/'HIGH' color.
+  // Optional, but must have a EdgeColorColumn specified.
+  EdgeThresholds edge_thresholds = 6;
+  // The columns to display when hovering over an edge. Optional.
+  repeated string edge_hover_info = 7;
+  // The length of the edge. Default is 100.
+  int64 edge_length = 8;
+  // Whether the graph should start in hierarchy mode as a default.
+  bool enable_default_hierarchy = 9;
+}
+
+// Display traffic between pods or services as a graph.
+message RequestGraph {
+  // The column name containing the requesting pod.
+  string requestor_pod_column = 1;
+  // The column name containing the responding pod.
+  string responder_pod_column = 2;
+  // The column name containing the requesting service.
+  string requestor_service_column = 3;
+  // The column name containing the responding service.
+  string responder_service_column = 4;
+  // The column name containing the p50 latency for this requestor/responder combination.
+  string p50_column = 5;
+  // The column name containing the p90 latency for this requestor/responder combination.
+  string p90_column = 6;
+  // The column name containing the p99 latency for this requestor/responder combination.
+  string p99_column = 7;
+  // The column name containing the error rate for this requestor/responder combination.
+  string error_rate_column = 8;
+  // The column name containing the requests per second for this requestor/responder combination.
+  string requests_per_second_column = 9;
+  // The column name containing the received bytes per second by the responder from the requestor.
+  string inbound_bytes_per_second_column = 10;
+  // The column name containing the sent bytes per second by the responder to the requestor.
+  string outbound_bytes_per_second_column = 11;
+  // The column name containing the total number of requests that occurred for this
+  // requestor/responder combination.
+  string total_request_count_column = 12;
+}
+
+// Display stacktrace information as a flamegraph.
+message StackTraceFlameGraph {
+  // The column containing the stacktraces, where the call-stack symbols are separated by semicolons.
+  string stacktrace_column = 1;
+  // The column containing the count for the stacktrace.
+  string count_column = 2;
+  // The column containing the percentage associated with the stacktrace.
+  string percentage_column = 3;
+  // The column containing the stacktrace's namespace.
+  string namespace_column = 4;
+  // The column containing the stacktrace's pod.
+  string pod_column = 5;
+  // The column containing the stacktrace's container.
+  string container_column = 6;
+  // The column containing the stacktrace's pid.
+  string pid_column = 7;
+  // The column containing the stacktrace's node.
+  string node_column = 8;
+  // The label for the percentage.
+  string percentage_label = 9;
+}
