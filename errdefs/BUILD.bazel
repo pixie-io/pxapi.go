@@ -24,7 +24,7 @@ go_library(
         "err.go",
         "parsers.go",
     ],
-    importpath = "px.dev/pixie/src/api/go/pxapi/errdefs",
+    importpath = "px.dev/pxapi/errdefs",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

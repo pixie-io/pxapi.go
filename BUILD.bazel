@@ -26,7 +26,7 @@ go_library(
         "uuid.go",
         "vizier.go",
     ],
-    importpath = "px.dev/pixie/src/api/go/pxapi",
+    importpath = "px.dev/pxapi",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi/errdefs",
