@@ -28,8 +28,7 @@ import (
 
 	"px.dev/pxapi/errdefs"
 	"px.dev/pxapi/types"
-	vizierapipb "px.dev/pxapi/proto/vizierapipb"
-	vizierpb "px.dev/pxapi/proto/vizierapipb"
+	"px.dev/pxapi/proto/vizierpb"
 )
 
 func makeErrorResponse(message string) *vizierpb.ExecuteScriptResponse {
@@ -159,7 +158,7 @@ func (t *singleInt64Handler) HandleInit(ctx context.Context, metadata types.Tabl
 	if len(metadata.ColInfo) != 1 {
 		return errors.New("handler only accepts a single col")
 	}
-	if metadata.ColInfo[0].Type != vizierapipb.INT64 {
+	if metadata.ColInfo[0].Type != vizierpb.INT64 {
 		return errors.New("handler only int columns")
 	}
 	t.ColumnName = metadata.ColInfo[0].Name

@@ -31,7 +31,7 @@ import (
 
 	"px.dev/pxapi/types"
 	"px.dev/pxapi/proto/cloudpb"
-	vizierapipb "px.dev/pxapi/proto/vizierapipb"
+	"px.dev/pxapi/proto/vizierpb"
 )
 
 const (
@@ -63,7 +63,7 @@ type Client struct {
 
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
-	vizier   vizierapipb.VizierServiceClient
+	vizier   vizierpb.VizierServiceClient
 }
 
 // NewClient creates a new Pixie API Client.
@@ -96,7 +96,7 @@ func (c *Client) init(ctx context.Context) error {
 	c.grpcConn = conn
 	c.cmClient = cloudpb.NewVizierClusterInfoClient(conn)
 
-	c.vizier = vizierapipb.NewVizierServiceClient(conn)
+	c.vizier = vizierpb.NewVizierServiceClient(conn)
 	return nil
 }
 
@@ -150,7 +150,7 @@ func (c *Client) NewVizierClient(ctx context.Context, vizierID string) (*VizierC
 	vzClient := &VizierClient{
 		cloud:    c,
 		vizierID: vizierID,
-		vzClient: vizierapipb.NewVizierServiceClient(vzConn),
+		vzClient: vizierpb.NewVizierServiceClient(vzConn),
 	}
 
 	return vzClient, nil
