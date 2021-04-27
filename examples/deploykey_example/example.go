@@ -16,39 +16,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package pxapi
+package main
 
 import (
 	"context"
+	"fmt"
+	"os"
 
-	vizierapipb "px.dev/pxapi/proto/vizierapipb"
+	"px.dev/pxapi"
 )
 
-// VizierClient is the client for a single vizier.
-type VizierClient struct {
-	cloud    *Client
-	vizierID string
-
-	vzClient vizierapipb.VizierServiceClient
-}
-
-// ExecuteScript runs the script on vizier.
-func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableMuxer) (*ScriptResults, error) {
-	req := &vizierapipb.ExecuteScriptRequest{
-		ClusterID: v.vizierID,
-		QueryStr:  pxl,
+func main() {
+	apiKey, ok := os.LookupEnv("PX_API_KEY")
+	if !ok {
+		panic("please set PX_API_KEY")
 	}
-	ctx, cancel := context.WithCancel(ctx)
-	res, err := v.vzClient.ExecuteScript(v.cloud.cloudCtxWithMD(ctx), req)
+
+	ctx := context.Background()
+	client, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(apiKey))
 	if err != nil {
-		cancel()
-		return nil, err
+		panic(err)
 	}
 
-	sr := newScriptResults()
-	sr.c = res
-	sr.cancel = cancel
-	sr.tm = mux
-
-	return sr, nil
+	key, err := client.CreateDeployKey(ctx, "test key")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Created deploy key: %v\n", key)
 }
