@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pxapi/types"
+	"px.dev/pxapi/utils"
 	"px.dev/pxapi/proto/cloudpb"
 	"px.dev/pxapi/proto/vizierpb"
 )
@@ -148,12 +149,21 @@ func (c *Client) NewVizierClient(ctx context.Context, vizierID string) (*VizierC
 		vzConn = conn
 	}
 
+	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
+	if c.useEncryption {
+		encOpts, decOpts, err = utils.CreateEncryptionOptions()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Now create the actual client.
 	vzClient := &VizierClient{
-		cloud:         c,
-		useEncryption: c.useEncryption,
-		vizierID:      vizierID,
-		vzClient:      vizierpb.NewVizierServiceClient(vzConn),
+		cloud:    c,
+		encOpts:  encOpts,
+		decOpts:  decOpts,
+		vizierID: vizierID,
+		vzClient: vizierpb.NewVizierServiceClient(vzConn),
 	}
 
 	return vzClient, nil
