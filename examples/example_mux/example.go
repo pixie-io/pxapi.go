@@ -25,7 +25,7 @@ import (
 
 	"px.dev/pxapi"
 	"px.dev/pxapi/errdefs"
-	"px.dev/pxapi/errdefs/formatters"
+	"px.dev/pxapi/formatters"
 	"px.dev/pxapi/muxes"
 	"px.dev/pxapi/types"
 )
