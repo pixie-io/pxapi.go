@@ -28,19 +28,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	"px.dev/pxapi/proto/cloudpb"
-	"px.dev/pxapi/proto/vizierpb"
 	"px.dev/pxapi/types"
 	"px.dev/pxapi/utils"
+	"px.dev/pxapi/proto/cloudpb"
+	"px.dev/pxapi/proto/vizierpb"
 )
 
 const (
 	defaultCloudAddr = "work.withpixie.ai:443"
 )
-
-func init() {
-	fmt.Println("Using new client")
-}
 
 // TableRecordHandler is an interface that processes a table record-wise.
 type TableRecordHandler interface {
