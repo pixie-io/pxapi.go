@@ -22,7 +22,6 @@ import (
 	"context"
 
 	"px.dev/pxapi/errdefs"
-
 	"px.dev/pxapi/proto/vizierpb"
 )
 
